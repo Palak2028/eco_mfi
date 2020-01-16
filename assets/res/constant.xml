@@ -1,0 +1,17 @@
+<?xml?>
+<Constant>
+    <LoginSnackBarErrorConst>Please fix the errors in red before submitting.
+    </LoginSnackBarErrorConst>
+    <signIn>Signing-In...</signIn>
+    <scanFingure>Scan your fingerprint to authenticate</scanFingure>
+    <Authorized>Authorized</Authorized>
+    <NotAuthorized>Not Authorized</NotAuthorized>
+    <loginBiometricerror>Login Failed \n Please Try Biometrics Again</loginBiometricerror>
+    <BankName>Demo Bank Login</BankName>
+    <Username>Username</Username>
+    <UsernameRequired>Username Required</UsernameRequired>
+    <Password>Password</Password>
+    <PasswordRequired>Password Required</PasswordRequired>
+    <CreateAccount>Create Account</CreateAccount>
+    <NeedHelp>Need Help?</NeedHelp>
+</Constant>

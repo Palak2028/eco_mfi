@@ -1,0 +1,1887 @@
+import 'dart:async';
+import 'package:eco_mfi/Utilities/globals.dart';
+import 'package:eco_mfi/pages/workflow/FPSPages/BiometricCheck.dart';
+import 'package:eco_mfi/pages/workflow/GroupFormation/bean/GroupFoundation.dart';
+import 'package:eco_mfi/pages/workflow/centerfoundation/bean/CenterDetailsBean.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:eco_mfi/Utilities/app_constant.dart' as constantResource;
+import 'package:eco_mfi/Utilities/app_constant.dart';
+import 'package:eco_mfi/db/AppDatabase.dart';
+import 'package:eco_mfi/db/TablesColumnFile.dart';
+import 'package:eco_mfi/pages/workflow/GroupFormation/FullScreenDialogForGroupSelection.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/FullScreenDialogForProductSelection.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/FullScreenDialogForPurposeSelection.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/List/CustomerLoanDetailsList.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/bean/CustomerLoanDetailsBean.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/bean/Product.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/bean/RepaymentFrequency.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/bean/TransactionMode.dart';
+import 'package:eco_mfi/pages/workflow/LoanApplication/bean/PurposeOfLoan.dart';
+import 'package:eco_mfi/pages/workflow/LookupMasterBean.dart';
+import 'package:eco_mfi/pages/workflow/SystemParameter/SystemParameterBean.dart';
+import 'package:eco_mfi/pages/workflow/centerfoundation/FullScreenDialogForCenterSelection.dart';
+import 'package:eco_mfi/Utilities/globals.dart' as globals;
+import 'package:eco_mfi/pages/workflow/customerFormation/List/CustomerList.dart';
+import 'package:eco_mfi/pages/workflow/statusDetails/CCGTab.dart';
+import 'package:eco_mfi/translations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toast/toast.dart';
+
+class LoanLimitDetails extends StatefulWidget {
+  final laonLimitPassedObject;
+  LoanLimitDetails({Key key, this.laonLimitPassedObject}) : super(key: key);
+
+  static Container _get(Widget child,
+      [EdgeInsets pad = const EdgeInsets.all(6.0)]) =>
+      new Container(
+        padding: pad,
+        child: child,
+      );
+  @override
+  _LoanLimitDetailsState createState() => new _LoanLimitDetailsState();
+}
+
+class _LoanLimitDetailsState extends State<LoanLimitDetails> {
+  FullScreenDialogForCenterSelection _myCenterDialog =
+      new FullScreenDialogForCenterSelection("");
+  FullScreenDialogForGroupSelection _myGroupDialog =
+      new FullScreenDialogForGroupSelection("");
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
+  TabController _tabController;
+  ProductBean prodObj = new ProductBean();
+  SubLookupForSubPurposeOfLoan purposeObj = new SubLookupForSubPurposeOfLoan();
+  TransactionMode transObj = new TransactionMode();
+  RepaymentFrequency RepayFreqObj = new RepaymentFrequency();
+  SystemParameterBean sysBean = new SystemParameterBean();
+  List isMemberOfGroupListLoan = [0];
+  String misIndividual = "Y";
+  String mIsCustomerSelected = null;
+  bool isMemeberOfGroupForLoan = true;
+  int isBiometricNeeded = 0;
+
+  String productName = "";
+  int productId = null;
+  double rateOfInterest;
+  String purposeName = "";
+  int purposeId = null;
+  String subPurposeName = "";
+  String subPurposeId;
+  String disbursmentMode = "";
+  int disbursmentModeId = null;
+  String collectionMode = "";
+  int collectionModeId = null;
+  double canApplyMaxAmount = 0.0;
+  double canApplyMaxInst = 0.0;
+  double canApplyMinAmount = 0.0;
+  double canApplyMinInst = 0.0;
+  LookupBeanData frequency;
+  LookupBeanData repaymentmode;
+  LookupBeanData modeofdisb;
+  LookupBeanData purpose;
+
+  DateTime selectedDate = DateTime.now();
+  //final dateFormat = DateFormat("EEEE, MMMM d, yyyy");
+  DateTime date;
+  TimeOfDay time;
+  final dateFormat = DateFormat("yyyy/MM/dd");
+  var formatter = new DateFormat('dd-MM-yyyy');
+  String tempDate = "----/--/--";
+  String tempYear;
+  String tempDay;
+  String tempMonth;
+  bool boolValidate = false;
+  int loanCycle = 0;
+  int loanNumber;
+  int branch;
+  SharedPreferences prefs;
+  String loginTime;
+  int usrGrpCode = 0;
+  String username;
+  String usrRole;
+  String geoLocation;
+  String geoLatitude;
+  String geoLongitude;
+  String reportingUser;
+  String loanDisbDt = "__-__-____";
+  String loaninstStrtDt = "__-__-____";
+  FocusNode monthFocus;
+  FocusNode yearFocus;
+  FocusNode monthInstStrtFocus;
+  FocusNode yearInstStrtFocus;
+  String tempInstStrtDate = "----/--/--";
+  String tempInstStrtYear;
+  String tempInstStrtDay;
+  String tempInstStrtMonth;
+  int mgrpID;
+  int mcenterId;
+  bool fieldEnabled = true;
+  bool declCheckBox = false;
+
+  CustomerLoanDetailsBean cusLoanObj = new CustomerLoanDetailsBean();
+  @override
+  void initState() {
+    super.initState();
+    //select amout salb based on tier field from customer
+    if(widget.laonLimitPassedObject!=null){
+      cusLoanObj = widget.laonLimitPassedObject;
+      loanDisbDt = cusLoanObj.mloandisbdt.toString();
+      loaninstStrtDt =cusLoanObj.minststrtdt.toString();
+      getSubpurposeOnEditMode();
+
+    }
+    else{
+      cusLoanObj.mappliedasind =  '0';
+    }
+    getSessionVariables();
+    //bhawpriya
+
+    monthFocus = new FocusNode();
+    yearFocus = new FocusNode();
+    monthInstStrtFocus = new FocusNode();
+    yearInstStrtFocus = new FocusNode();
+      List<String> tempDropDownValues = new List<String>();
+    tempDropDownValues.add(cusLoanObj.mpurposeofLoan.toString());
+    tempDropDownValues.add(cusLoanObj.mfrequency);
+    tempDropDownValues.add(cusLoanObj.mrepaymentmode.toString());
+    tempDropDownValues.add(cusLoanObj.mmodeofdisb.toString());
+
+    if (!loanDisbDt.contains("_")) {
+      try {
+        DateTime formattedDate = DateTime.parse(loanDisbDt);
+        tempDay = formattedDate.day.toString();
+        tempMonth = formattedDate.month.toString();
+        tempYear = formattedDate.year.toString();
+        loanDisbDt = tempDay.toString() +"-"+tempMonth.toString()+"-"+tempYear.toString();
+        setState(() {});
+      } catch (e) {
+        print("Exception Occupred");
+      }
+    }
+    if (!loaninstStrtDt.contains("_")) {
+      try {
+        DateTime formattedDate = DateTime.parse(loaninstStrtDt);
+        tempInstStrtDay = formattedDate.day.toString();
+        tempInstStrtMonth = formattedDate.month.toString();
+        tempInstStrtYear = formattedDate.year.toString();
+        loaninstStrtDt = tempInstStrtDay.toString() +"-"+tempInstStrtMonth.toString()+"-"+tempInstStrtYear.toString();
+        setState(() {});
+      } catch (e) {
+        print("Exception Occupred");
+      }
+    }
+
+    for (int k = 0;
+    k < globals.dropdownCaptionsValuesCustLoanDetailsInfo.length;
+    k++) {
+      for (int i = 0;
+      i < globals.dropdownCaptionsValuesCustLoanDetailsInfo[k].length;
+      i++) {
+        if (globals.dropdownCaptionsValuesCustLoanDetailsInfo[k][i].mcode ==
+            tempDropDownValues[k]) {
+          setValue(k, globals.dropdownCaptionsValuesCustLoanDetailsInfo[k][i]);
+        }
+      }
+    }
+    if (globals.applicationDate == null) {
+      globals.applicationDate = DateTime.now();
+    }
+    //  cusLoanObj.customerNumber = custListObj.customerNumber;
+    if (widget.laonLimitPassedObject != null) {
+      cusLoanObj = widget.laonLimitPassedObject;
+    } else {
+      AppDatabase.get().getMaxCustomerLoanNumber().then((val) {
+        setState(() {
+          cusLoanObj.trefno = val;
+        });
+
+        //beanObj.segmentIdentifier;
+      });
+    }
+  }
+Future<Null> getSubpurposeOnEditMode()async{
+  await AppDatabase.get()
+      .getSunPurposeOfLoanListFromSubLookpTable(4000,cusLoanObj.mpurposeofLoan)
+      .then((List<SubLookupForSubPurposeOfLoan> response){
+    for(int subPurpose =0;subPurpose<response.length;subPurpose++){
+      if(response[subPurpose].code!=null && cusLoanObj.msubpurposeofloan!=null) {
+        if (response[subPurpose].code.trim() ==
+            cusLoanObj.msubpurposeofloan.toString()) {
+          cusLoanObj.msubpurposeofloandesc = response[subPurpose].codeDesc;
+          break;
+        }
+      }
+    }
+  });
+}
+  Future<Null> getSessionVariables() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      branch = prefs.get(TablesColumnFile.musrbrcode);
+      reportingUser = prefs.getString(TablesColumnFile.mreportinguser);
+      username = prefs.getString(TablesColumnFile.musrcode);
+      usrRole = prefs.getString(TablesColumnFile.musrdesignation);
+      usrGrpCode = prefs.getInt(TablesColumnFile.mgrpcd);
+      loginTime = prefs.getString(TablesColumnFile.LoginTime);
+
+            geoLocation = prefs.getString(TablesColumnFile.geoLocation);
+
+      try{
+        geoLatitude = prefs.getDouble(TablesColumnFile.geoLatitude).toString();
+        geoLongitude = prefs.getDouble(TablesColumnFile.geoLongitude).toString();
+      }catch(_){
+        print("Exception in getting loangitude");
+      }
+
+      if (prefs.getString(TablesColumnFile.misIndividual) != null &&
+          prefs.getString(TablesColumnFile.misIndividual).trim() !=
+              "") {
+        misIndividual =
+            prefs.getString(TablesColumnFile.misIndividual);
+
+        if (misIndividual != null &&
+            misIndividual.trim().toUpperCase() == 'N') {
+          isMemeberOfGroupForLoan = false;
+        }
+      }
+      print(prefs.getString(TablesColumnFile.misIndividual));
+      isBiometricNeeded = prefs.getInt(TablesColumnFile.ISBIOMETRICNEEDED);
+    });
+  }
+
+  //LookupBeanData blankBean = new LookupBeanData(codeDesc: "",code: "",codeType: 0);
+
+  List<DropdownMenuItem<LookupBeanData>> generateDropDown(int no) {
+    List<DropdownMenuItem<LookupBeanData>> _dropDownMenuItems1;
+    List<LookupBeanData> mapData = List<LookupBeanData>();
+    LookupBeanData bean = new LookupBeanData();
+    bean.mcodedesc = "";
+    mapData.add(blankBean);
+    for (int k = 0;
+        k < globals.dropdownCaptionsValuesCustLoanDetailsInfo[no].length;
+        k++) {
+      mapData.add(globals.dropdownCaptionsValuesCustLoanDetailsInfo[no][k]);
+    }
+    _dropDownMenuItems1 = mapData.map((value) {
+         return new DropdownMenuItem<LookupBeanData>(
+        value: value,
+        child: new Text(value.mcodedesc),
+      );
+    }).toList();
+
+    return _dropDownMenuItems1;
+  }
+
+  void _onClick() {
+    Navigator.push(
+      context,
+      new MaterialPageRoute(
+          builder: (context) =>
+              // new LoanLimitDetails()), //When Authorized Navigate to the next screen
+              new CCGTab(cusLoanObj.mleadstatus, cusLoanObj.trefno)),
+    );
+  }
+
+  showDropDown(LookupBeanData selectedObj, int no) {
+
+      if (selectedObj.mcodedesc.isEmpty) {
+
+      switch (no) {
+        case 0:
+          purpose = blankBean;
+          cusLoanObj.mpurposeofLoan = 0;
+          cusLoanObj.msubpurposeofloan =null;
+          cusLoanObj.msubpurposeofloandesc=null;
+          break;
+        case 1:
+          frequency = blankBean;
+          cusLoanObj.mfrequency = blankBean.mcode;
+          break;
+        case 2:
+          repaymentmode = blankBean;
+          cusLoanObj.mrepaymentmode = 0;
+          break;
+        case 3:
+          modeofdisb = blankBean;
+          cusLoanObj.mmodeofdisb = 0;
+          break;
+        default:
+          break;
+      }
+      setState(() {});
+    } else {
+      bool isBreak = false;
+      for (int k = 0;
+          k < globals.dropdownCaptionsValuesCustLoanDetailsInfo[no].length;
+          k++) {
+
+        if (globals.dropdownCaptionsValuesCustLoanDetailsInfo[no][k].mcodedesc
+                .trim() ==
+            selectedObj.mcodedesc.trim()) {
+          setValue(no, selectedObj);
+          isBreak = true;
+          break;
+        }
+        if (isBreak) {
+          break;
+        }
+      }
+    }
+  }
+
+  setValue(int no, LookupBeanData value) async{
+    setState(() {
+
+      switch (no) {
+        case 0:
+
+          purpose = value;
+          cusLoanObj.mpurposeofLoan = int.parse(value.mcode);
+          if(widget.laonLimitPassedObject==null) {
+            cusLoanObj.msubpurposeofloan = null;
+            cusLoanObj.msubpurposeofloandesc = null;
+          }
+
+          break;
+        case 1:
+
+          frequency = value;
+          cusLoanObj.mfrequency = value.mcode;
+
+          break;
+        case 2:
+          repaymentmode = value;
+          cusLoanObj.mrepaymentmode = int.parse(value.mcode);
+          break;
+        case 3:
+          modeofdisb = value;
+          cusLoanObj.mmodeofdisb = int.parse(value.mcode);
+          break;
+        default:
+          break;
+      }
+    });
+
+    if (cusLoanObj.mprdcd != null && cusLoanObj.mloancycle !=null &&
+        cusLoanObj.mfrequency != null && branch!=null&&branch > 0){
+
+
+      await AppDatabase.get()
+          .selectMaxLoanAmtCanApply(
+          cusLoanObj.mprdcd.trim().toString(),
+          cusLoanObj.mloancycle+1,
+          branch,
+          cusLoanObj.mfrequency)
+          .then((onValue) {
+
+
+            if(onValue==null||onValue.isEmpty){
+              canApplyMaxAmount = 0.0;
+              canApplyMinAmount = 0.0;
+              canApplyMaxInst = 0.0;
+              canApplyMinInst = 0.0;
+            }
+        for (int secondLoanCycle = 0;
+            secondLoanCycle < onValue.length;
+            secondLoanCycle++) {
+          if(onValue[secondLoanCycle].mruletype ==1){
+            canApplyMaxAmount = onValue[secondLoanCycle].mmaxamount;
+            canApplyMinAmount = onValue[secondLoanCycle].mminamount;
+          } else if (onValue[secondLoanCycle].mruletype == 2)
+            canApplyMaxInst = onValue[secondLoanCycle].mmaxamount;
+          canApplyMinInst = onValue[secondLoanCycle].mminamount;
+        }
+        setState(() {});
+      });
+    }
+  }
+
+  LookupBeanData blankBean =
+      new LookupBeanData(mcodedesc: "", mcode: "", mcodetype: 0);
+
+  Widget getTextContainer(String textValue) {
+    return new Container(
+      padding: EdgeInsets.fromLTRB(5.0, 20.0, 0.0, 20.0),
+      child: new Text(
+        textValue,
+        //textDirection: TextDirection,
+        textAlign: TextAlign.start,
+        /*overflow: TextOverflow.ellipsis,*/
+        style: new TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+            fontStyle: FontStyle.normal,
+            fontSize: 12.0),
+      ),
+    );
+  }
+
+  Widget groupLending() => LoanLimitDetails._get(new Row(
+    children: _makeRadios(2, globals.radioCaptionValuesIsMemberOfGroup, 0),
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+  ));
+
+  List<Widget> _makeRadios(int numberOfRadios, List textName, int position) {
+    List<Widget> radios = new List<Widget>();
+    for (int i = 0; i < numberOfRadios; i++) {
+      radios.add(new Row(
+        children: <Widget>[
+          new Text(
+            textName[i],
+            textAlign: TextAlign.right,
+            style: new TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+              fontStyle: FontStyle.normal,
+              fontSize: 10.0,
+            ),
+          ),
+          new Radio(
+            value: i,
+            groupValue: cusLoanObj.mappliedasind==null || cusLoanObj.mappliedasind=='null'?0:int.parse(cusLoanObj.mappliedasind) ,
+            onChanged: (selection) {
+              if ((mgrpID != null &&
+                  mgrpID == 0)||(mgrpID == cusLoanObj.mcustno&&cusLoanObj.mcustno!=0)) {
+                return null;
+              }
+              return _onRadioSelected(selection, position);
+            },
+            activeColor: Color(0xff07426A),
+          ),
+        ],
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+      ));
+    }
+    return radios;
+  }
+
+  _onRadioSelected(int selection, int position) {
+    cusLoanObj.mprdname ="";
+    cusLoanObj.mprdcd ="";
+    setState(() => cusLoanObj.mappliedasind = selection.toString());
+    if (position == 0) {
+      if (globals.radioCaptionValuesIsMemberOfGroup[selection] == 'Yes') {
+        isMemeberOfGroupForLoan = false;
+      } else {
+        isMemeberOfGroupForLoan = true;
+      }
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    setState(() {
+
+    });
+    return new Scaffold(
+      key: _scaffoldKey,
+      appBar: new AppBar(
+        elevation: 1.0,
+        leading: new IconButton(
+          icon: new Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        backgroundColor: Color(0xff07426A),
+        brightness: Brightness.light,
+        title: new Text(
+          Translations.of(context).text('loan_application'),
+          //textDirection: TextDirection,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: new TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontStyle: FontStyle.normal),
+        ),
+        actions: <Widget>[
+         //globals.isButtonDisabled
+          (declCheckBox==true&&isBiometricNeeded==1)||
+              (declCheckBox==false && isBiometricNeeded==0)? new IconButton(
+            icon: new Icon(
+              Icons.save,
+              color: Colors.white,
+              size: 40.0,
+            ),
+            onPressed: () {
+              /* if(!validateSubmit()){
+
+              }else{*/
+              proceed();
+              // }
+            },
+          ):new IconButton(
+    disabledColor: Colors.black,
+    icon: new Icon(
+
+    Icons.save,
+    color: Colors.red,
+    size: 40.0,
+
+    ),
+          onPressed: () {
+            Toast.show("Please do the BIOMETRIC OR ACCEPT the declaration for ENABLE the SAVE BUTTON!", context);
+          }
+    ),
+         /* new IconButton(
+            icon: new Icon(
+              Icons.border_color,
+              color: Colors.white,
+              size: 40.0,
+            ),
+            tooltip: 'Repair it',
+            onPressed: () {
+              _onClick();
+              // }
+            },
+          ),*/
+          new Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5.0),
+          ),
+        ],
+      ),
+      body: new Form(
+        key: _formKey,
+        autovalidate: false,
+        onWillPop: () {
+          return Future(() => true);
+        },
+        onChanged: () async {
+          final FormState form = _formKey.currentState;
+          form.save();
+          await calculate();
+          setState(() {});
+        },
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.all(0.0),
+          children: <Widget>[
+
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('loan_tablet_ref_number')),
+                subtitle: new Text("${cusLoanObj.trefno}"),
+              ),
+            ),
+            new Card(
+              child: new ListTile(
+                  title: new Text(Translations.of(context).text('customer_number_and_name')),
+                  subtitle: cusLoanObj.mcustno == null
+                      ? new Text("")
+                      : new Text(
+                          "${cusLoanObj.mcustno.toString() + " " + cusLoanObj.mcustname.toString()}"),
+                  onTap: () => getCustomerNumber()),
+            ),
+
+            isBiometricNeeded==0?new Container():new Text(
+              "Biometric Check",
+              textAlign: TextAlign.center,
+            ),
+
+            isBiometricNeeded==0?new Container():new FingerScannerImageAsset(
+              mIsCustomerSelected: mIsCustomerSelected,mrefno:cusLoanObj.mcustmrefno,trefno:cusLoanObj.mcusttrefno
+            ),
+            isBiometricNeeded==0?new Container():new CheckboxListTile(
+                value: declCheckBox  ,
+                title: new Text(
+                    "I declare that i want to override the biometric result."),
+                onChanged: (val) {
+                  setState(() {
+                    declCheckBox = val;
+
+                  });
+                }),
+
+
+            /*  new Text(
+              "Biometric Check",
+              textAlign: TextAlign.center,
+            ),
+            Container(
+                child: ConstrainedBox(
+                    constraints: BoxConstraints.tightFor(
+                        height: 100.0, width: 100.00),
+                    // for positioning of icon of scanner
+                    child: FlatButton(
+                        onPressed:  null,
+                        child:
+                        Image.asset("assets/fpsImages/finger_scan_logo_green.png")))),*/
+            misIndividual == "Y"
+                ? new Card(
+                child:new Table(children: [
+              new TableRow(
+                  decoration: new BoxDecoration(
+                    border: Border.all(color: Colors.grey, width: 0.1),
+                  ),
+                  children: [
+                    getTextContainer(
+                        globals.radioCaptionAppliedAsInd[0]),
+                    groupLending(),
+                  ]),
+            ]))
+                : Container(),
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('product')),
+                subtitle: cusLoanObj.mprdname == null && cusLoanObj.mprdcd == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.mprdname.trim() == null || cusLoanObj.mprdname.trim() == 'null' ? "" : cusLoanObj.mprdname.trim()}/${cusLoanObj.mprdcd.trim()}"),
+                onTap: getProduct,
+              ),
+            ),
+            new Card(
+              child: new DropdownButtonFormField(
+                /*value: cusLoanObj.purpose == "" || cusLoanObj.purpose == null
+                    ? null
+                    : cusLoanObj.purpose,
+                items: generateDropDown(0),
+                onChanged: (String val) => changedDropDownItem(val, 0),*/
+                value: purpose,
+                items: generateDropDown(0),
+                onChanged: (LookupBeanData newValue) {
+
+                  showDropDown(newValue, 0);
+
+                },
+               decoration:  InputDecoration(
+                  hintText: Translations.of(context).text('select_purpose_of_loan'),
+                  labelText: constantResource.captionValue,
+                  hintStyle: TextStyle(color: Colors.grey),
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                    color: Colors.black,
+                  )),
+                  focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                    color: Colors.black,
+                  )),
+                  contentPadding: EdgeInsets.all(20.0),
+                ),
+              ),
+            ),
+            new Card(
+              child: new ListTile(
+                  title: new Text(Translations.of(context).text('sub_purpose_of_loan')),
+                  subtitle: cusLoanObj.msubpurposeofloan == null
+                      ? new Text("")
+                      : new Text(Translations.of(context).text('subPurpose') +"${cusLoanObj.msubpurposeofloandesc}"+Translations.of(context).text('and_code') +"${cusLoanObj.msubpurposeofloan}"),
+                  onTap: () => getPurpose("subpurpose",
+                      int.parse(purpose.mcode != null ? purpose.mcode : 0))),
+            ),
+            new Card(
+              child: new DropdownButtonFormField(
+                value: frequency,
+                items: generateDropDown(1),
+                onChanged: (LookupBeanData newValue) {
+                  showDropDown(newValue, 1);
+                },
+                validator: (args) {
+
+                },
+                decoration:  InputDecoration(
+                  hintText: Translations.of(context).text('select_repayment_frequency_of_loan'),
+                  labelText: Translations.of(context).text('repayment_frequency_of_loan'),
+                  hintStyle: TextStyle(color: Colors.grey),
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                  focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                  contentPadding: EdgeInsets.all(20.0),
+                ),
+              ),
+
+            ),
+            new Column(
+              children: <Widget>[
+               /* new TextFormField(
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    //  hintText: 'Enter Applied Amount',
+                    labelText: constantResource.maxAmountApply,
+                    hintStyle: TextStyle(color: Colors.grey),
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                      color: Colors.black,
+                    )),
+                    focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                      color: Colors.black,
+                    )),
+                    contentPadding: EdgeInsets.all(20.0),
+                  ),
+                  initialValue: canApplyMaxAmount == null
+                      ? ""
+                      : canApplyMaxAmount.toString(),
+                ), */
+
+                new Card(
+                  child: new ListTile(
+                      title: new Text(
+                          constantResource.maxAmountApplyminAmountcanApply),
+                      subtitle: canApplyMaxAmount == null ||
+                              canApplyMinAmount == null
+                          ? new Text("")
+                          : new Text(
+                              "${canApplyMinAmount}  -  ${canApplyMaxAmount}")),
+                ),
+
+               /* new TextFormField(
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    //  hintText: 'Enter Applied Amount',
+                    labelText: constantResource.maxInstApply,
+                    hintStyle: TextStyle(color: Colors.grey),
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Colors.black,
+                        )),
+                    focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Colors.black,
+                        )),
+                    contentPadding: EdgeInsets.all(20.0),
+                  ),
+                  initialValue: canApplyMaxInst == null
+                      ? ""
+                      : canApplyMaxInst.toString(),
+                ),*/
+
+                new Card(
+                  child: new ListTile(
+                      title: new Text(constantResource.maxInstApply),
+                      subtitle: canApplyMaxInst == null ||
+                              canApplyMinInst == null
+                          ? new Text("")
+                          : new Text(
+                              "${canApplyMinInst.toInt()}  -  ${canApplyMaxInst.toInt()}")),
+                ),
+
+                new TextFormField(
+                    keyboardType: TextInputType.number,
+                    decoration:  InputDecoration(
+                      hintText:Translations.of(context).text('enter_applied_amount'),
+                      labelText: Translations.of(context).text('applied_amount'),
+                      hintStyle: TextStyle(color: Colors.grey),
+                      labelStyle: TextStyle(color: Colors.grey),
+                      border: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                      focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                      contentPadding: EdgeInsets.all(20.0),
+                    ),
+                    initialValue: cusLoanObj.mappldloanamt == null
+                        ? ""
+                        : cusLoanObj.mappldloanamt.toString(),
+                    onSaved: (String value) {
+
+                      if (value.isNotEmpty &&
+                          value != "" &&
+                          value != null &&
+                          value != 'null') {
+                        cusLoanObj.mappldloanamt = double.parse(value);
+                      }
+                      cusLoanObj.mloanamtdisbd = cusLoanObj.mappldloanamt;
+                      cusLoanObj.mapprvdloanamt = cusLoanObj.mappldloanamt;
+                    }),
+
+              ],
+            ),
+            SizedBox(
+              height: 20.0,
+            ),
+            Container(
+              decoration: BoxDecoration(),
+              child: new Row(
+                children: <Widget>[Text(Constant.loandisbdt)],
+              ),
+            ),
+            new Container(
+              decoration: BoxDecoration(),
+              child: new Row(
+                children: <Widget>[
+                  new Container(
+                    width: 50.0,
+                    child: new TextField(
+                        decoration: InputDecoration(hintText: Translations.of(context).text('DD')),
+                        inputFormatters: [
+                          new LengthLimitingTextInputFormatter(2),
+                          globals.onlyIntNumber
+                        ],
+                        controller: tempDay == null
+                            ? null
+                            : new TextEditingController(text: tempDay),
+                        keyboardType: TextInputType.numberWithOptions(),
+                        onChanged: (val) {
+                          if (val != "0") {
+                            tempDay = val;
+
+                            if (int.parse(val) <= 31 && int.parse(val) > 0) {
+                              if (val.length == 2) {
+                                loanDisbDt = loanDisbDt.replaceRange(0, 2, val);
+                                FocusScope.of(context).requestFocus(monthFocus);
+                              } else {
+                                loanDisbDt =
+                                    loanDisbDt.replaceRange(0, 2, "0" + val);
+                              }
+                            } else {
+                              setState(() {
+                                tempDay = "";
+                              });
+                            }
+                          }
+                        }),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: new Text("/"),
+                  ),
+                  new Container(
+                    width: 50.0,
+                    child: new TextField(
+                      decoration: InputDecoration(
+                        hintText: Translations.of(context).text('MM'),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(),
+                      inputFormatters: [
+                        new LengthLimitingTextInputFormatter(2),
+                        globals.onlyIntNumber
+                      ],
+                      focusNode: monthFocus,
+                      controller: tempMonth == null
+                          ? null
+                          : new TextEditingController(text: tempMonth),
+                      onChanged: (val) {
+                        if (val != "0") {
+                          tempMonth = val;
+                          if (int.parse(val) <= 12 && int.parse(val) > 0) {
+                            if (val.length == 2) {
+                              loanDisbDt = loanDisbDt.replaceRange(3, 5, val);
+
+                              FocusScope.of(context).requestFocus(yearFocus);
+                            } else {
+                              loanDisbDt =
+                                  loanDisbDt.replaceRange(3, 5, "0" + val);
+                            }
+                          } else {
+                            setState(() {
+                              tempMonth = "";
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: new Text("/"),
+                  ),
+                  Container(
+                    width: 80,
+                    child: new TextField(
+                      decoration: InputDecoration(
+                        hintText: Translations.of(context).text('YYYY'),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(),
+                      inputFormatters: [
+                        new LengthLimitingTextInputFormatter(4),
+                        globals.onlyIntNumber
+                      ],
+                      focusNode: yearFocus,
+                      controller: tempYear == null
+                          ? null
+                          : new TextEditingController(text: tempYear),
+                      onChanged: (val) {
+                        tempYear = val;
+                        if (val.length == 4)
+                          loanDisbDt = loanDisbDt.replaceRange(6, 10, val);
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50.0,
+                  ),
+                  IconButton(
+                      icon: Icon(Icons.calendar_today),
+                      onPressed: () {
+                        _selectDisDtDate(context);
+                      })
+                ],
+              ),
+            ),
+//loanstart dt
+            SizedBox(height: 20.0,),
+            Container(
+              decoration: BoxDecoration(),
+              child: new Row(
+                children: <Widget>[Text(Constant.loaninstStrtDt)],
+              ),
+            ),
+            new Container(
+              decoration: BoxDecoration(),
+              child: new Row(
+                children: <Widget>[
+                  new Container(
+                    width: 50.0,
+                    child: new TextField(
+                        decoration: InputDecoration(hintText:Translations.of(context).text('DD')),
+                        inputFormatters: [
+                          new LengthLimitingTextInputFormatter(2),
+                          globals.onlyIntNumber
+                        ],
+                        controller: tempInstStrtDay == null
+                            ? null
+                            : new TextEditingController(text: tempInstStrtDay),
+                        keyboardType: TextInputType.numberWithOptions(),
+                        onChanged: (val) {
+                          if (val != "0") {
+                            tempInstStrtDay = val;
+
+                            if (int.parse(val) <= 31 && int.parse(val) > 0) {
+                              if (val.length == 2) {
+                                loaninstStrtDt = loaninstStrtDt.replaceRange(0, 2, val);
+                                FocusScope.of(context).requestFocus(monthInstStrtFocus);
+                              } else {
+                                loaninstStrtDt =
+                                    loaninstStrtDt.replaceRange(0, 2, "0" + val);
+                              }
+                            } else {
+                              setState(() {
+                                tempInstStrtDay = "";
+                              });
+                            }
+                          }
+                        }),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: new Text("/"),
+                  ),
+                  new Container(
+                    width: 50.0,
+                    child: new TextField(
+                      decoration: InputDecoration(
+                        hintText:Translations.of(context).text('MM'),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(),
+                      inputFormatters: [
+                        new LengthLimitingTextInputFormatter(2),
+                        globals.onlyIntNumber
+                      ],
+                      focusNode: monthInstStrtFocus,
+                      controller: tempInstStrtMonth == null
+                          ? null
+                          : new TextEditingController(text: tempInstStrtMonth),
+                      onChanged: (val) {
+                        if (val != "0") {
+                          tempInstStrtMonth = val;
+                          if (int.parse(val) <= 12 && int.parse(val) > 0) {
+                            if (val.length == 2) {
+                              loaninstStrtDt = loaninstStrtDt.replaceRange(3, 5, val);
+
+                              FocusScope.of(context).requestFocus(yearInstStrtFocus);
+                            } else {
+                              loaninstStrtDt =
+                                  loaninstStrtDt.replaceRange(3, 5, "0" + val);
+                            }
+                          } else {
+                            setState(() {
+                              tempInstStrtMonth = "";
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: new Text("/"),
+                  ),
+                  Container(
+                    width: 80,
+                    child: new TextField(
+                      decoration: InputDecoration(
+                        hintText: Translations.of(context).text('YYYY'),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(),
+                      inputFormatters: [
+                        new LengthLimitingTextInputFormatter(4),
+                        globals.onlyIntNumber
+                      ],
+                      focusNode: yearInstStrtFocus,
+                      controller: tempInstStrtYear == null
+                          ? null
+                          : new TextEditingController(text: tempInstStrtYear),
+                      onChanged: (val) {
+                        tempInstStrtYear = val;
+                        if (val.length == 4)
+                          loaninstStrtDt =  loaninstStrtDt.replaceRange(6, 10, val);
+
+                      },
+
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50.0,
+                  ),
+                  IconButton(
+                      icon: Icon(Icons.calendar_today),
+                      onPressed: () {
+                        _selectStrtDtDate(context);
+                      })
+                ],
+              ),
+            ),
+
+            //ends
+            new TextFormField(
+                keyboardType: TextInputType.number,
+                decoration:  InputDecoration(
+                  hintText: Translations.of(context).text('enter_number_of_installment'),
+                  labelText: Translations.of(context).text('number_of_installment'),
+                  hintStyle: TextStyle(color: Colors.grey),
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                  focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.black,
+                      )),
+                  contentPadding: EdgeInsets.all(20.0),
+                ),
+                initialValue:
+                cusLoanObj.mperiod == null ? "" : "${cusLoanObj.mperiod}",
+                validator: (String value) {
+                  if (RegExp(r'[!@#<>?":_`~;[\]\\|=+)(*&^%0-9-]')
+                      .hasMatch(value)) {
+                    return Translations.of(context).text('no_special_character_allowed');
+                  } else
+                    return null;
+                },
+                onSaved: (String value) {
+                  if (value.isNotEmpty &&
+                      value != "" &&
+                      value != null &&
+                      value != 'null') {
+                    cusLoanObj.mperiod = int.parse(value);
+                  }
+                }),
+
+
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('R.O.I')),
+                subtitle: cusLoanObj.mintrate == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.mintrate}"),
+              ),
+            ),
+
+            new Card(
+              child: new ListTile(
+                  title: new Text(Translations.of(context).text('end_date')),
+                  subtitle: cusLoanObj.mexpdt == null
+                      ? new Text("")
+                      : new Text("${cusLoanObj.mexpdt}")),
+            ),
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('interest_amount')),
+                subtitle: cusLoanObj.minterestamount == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.minterestamount}"),
+              ),
+            ),
+
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('instalment_amount')),
+                subtitle: cusLoanObj.minstamt == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.minstamt}"),
+              ),
+            ),
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('approved_amount')),
+                subtitle: cusLoanObj.mapprvdloanamt == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.mapprvdloanamt}"),
+              ),
+            ),
+            new Card(
+              child: new ListTile(
+                title: new Text(Translations.of(context).text('disbursment_amount')),
+                subtitle: cusLoanObj.mloanamtdisbd == null
+                    ? new Text("")
+                    : new Text("${cusLoanObj.mloanamtdisbd}"),
+              ),
+            ),
+            new Card(
+              child: new DropdownButtonFormField(
+                value: repaymentmode,
+                items: generateDropDown(2),
+                onChanged: (LookupBeanData newValue) {
+                  showDropDown(newValue, 2);
+                },
+                validator: (args) {
+
+                },
+                decoration:  InputDecoration(
+                  isDense: true,
+                  hintText: Translations.of(context).text('Select_Mode_Of_Collection'),
+                  labelText: Translations.of(context).text('mode_of_collection'),
+                  hintStyle: TextStyle(color: Colors.grey),
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                    color: Colors.black,
+                  )),
+                  focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                    color: Colors.black,
+                  )),
+                  contentPadding: EdgeInsets.all(20.0),
+                ),
+              ),
+            ),
+            new Card(
+              child: new Card(
+                child: new DropdownButtonFormField(
+                  value: modeofdisb,
+                  items: generateDropDown(3),
+                  onChanged: (LookupBeanData newValue) {
+                    showDropDown(newValue, 3);
+                  },
+                  validator: (args) {
+
+                  },
+                  decoration:  InputDecoration(
+                    hintText:Translations.of(context).text('select_mode_of_disbursment'),
+                    labelText:Translations.of(context).text('mode_of_disbursment'),
+                    hintStyle: TextStyle(color: Colors.grey),
+                    labelStyle: TextStyle(color: Colors.grey),
+                    filled: true,
+                    isDense: true,
+                    border: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                      color: Colors.black,
+                    )),
+                    focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                      color: Colors.black,
+                    )),
+                    contentPadding: EdgeInsets.all(20.0),
+                  ),
+                ),
+              ),
+            ),
+            new Container(
+              height: 20.0,
+            ),
+            /*   FloatingActionButton.extended(
+              icon: Icon(Icons.assignment_turned_in),
+              backgroundColor: Color(0xff07426A),
+              label: Text("Submit"),
+              onPressed: proceed,
+            ),*/
+            new Container(
+              height: 20.0,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<Null> _selectDisDtDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(1800, 8),
+        lastDate: DateTime(2101));
+    if (picked != null && picked != cusLoanObj.mloandisbdt)
+      setState(() {
+        cusLoanObj.mloandisbdt = picked;
+        tempDate = formatter.format(picked);
+        if (picked.day.toString().length == 1) {
+          tempDay = "0" + picked.day.toString();
+        } else
+          tempDay = picked.day.toString();
+        loanDisbDt = loanDisbDt.replaceRange(0, 2, tempDay);
+        tempYear = picked.year.toString();
+        loanDisbDt = loanDisbDt.replaceRange(6, 10, tempYear);
+        if (picked.month.toString().length == 1) {
+          tempMonth = "0" + picked.month.toString();
+        } else
+          tempMonth = picked.month.toString();
+        loanDisbDt = loanDisbDt.replaceRange(3, 5, tempMonth);
+      });
+  }
+
+
+  Future<Null> _selectStrtDtDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(1800, 8),
+        lastDate: DateTime(2101));
+    if (picked != null && picked != cusLoanObj.minststrtdt)
+      setState(() {
+        cusLoanObj.minststrtdt = picked;
+        tempInstStrtDate = formatter.format(picked);
+        if (picked.day.toString().length == 1) {
+          tempInstStrtDay = "0" + picked.day.toString();
+        } else
+          tempInstStrtDay = picked.day.toString();
+        loaninstStrtDt = loaninstStrtDt.replaceRange(0, 2, tempInstStrtDay);
+        tempInstStrtYear = picked.year.toString();
+        loaninstStrtDt = loaninstStrtDt.replaceRange(6, 10, tempInstStrtYear);
+        if (picked.month.toString().length == 1) {
+          tempInstStrtMonth = "0" + picked.month.toString();
+        } else
+          tempInstStrtMonth = picked.month.toString();
+        loaninstStrtDt = loaninstStrtDt.replaceRange(3, 5, tempInstStrtMonth);
+      });
+    calculate();
+    setState(() {
+
+    });
+  }
+
+
+/*  void _onTapItem(CustomerLoanDetailsBean item) {
+
+    Navigator.push(
+      context,
+      new MaterialPageRoute(
+          builder: (context) =>
+              // new LoanLimitDetails()), //When Authorized Navigate to the next screen
+              new CCGTab("CCG", 0)),
+    );
+  }*/
+
+  Future getProduct() async {
+
+
+    print("before getting customer ${cusLoanObj.mappliedasind}");
+    prodObj = await Navigator.push(
+        context,
+        new MaterialPageRoute(
+          builder: (BuildContext context) =>
+              FullScreenDialogForProductSelection(30,int.parse(cusLoanObj.mappliedasind)),
+          fullscreenDialog: true,
+        ));
+    if (prodObj != null) {
+
+      cusLoanObj.mprdcd = prodObj.mprdCd;
+      cusLoanObj.mprdname = prodObj.mname.trim();
+      cusLoanObj.mcurCd = prodObj.mcurCd;
+      if (cusLoanObj.mcustno > 0 || cusLoanObj.mcustmrefno > 0 ||
+          cusLoanObj.mcusttrefno > 0) {
+        if (cusLoanObj.mprdcd != null && cusLoanObj.mloancycle !=null &&
+            cusLoanObj.mfrequency != null && branch > 0){
+          await AppDatabase.get()
+              .selectMaxLoanAmtCanApply(
+              cusLoanObj.mprdcd.trim().toString(),
+              cusLoanObj.mloancycle+1,
+              branch,
+              cusLoanObj.mfrequency)
+              .then((onValue) {
+
+            for(int secondLoanCycle = 0;secondLoanCycle<onValue.length;secondLoanCycle++){
+              if (onValue[secondLoanCycle].mruletype == 1) {
+                canApplyMaxAmount = onValue[secondLoanCycle].mmaxamount;
+                canApplyMinAmount = onValue[secondLoanCycle].mminamount;
+              } else if (onValue[secondLoanCycle].mruletype == 2)
+                canApplyMaxInst = onValue[secondLoanCycle].mmaxamount;
+              canApplyMinInst = onValue[secondLoanCycle].mminamount;
+            }
+            setState(() {});
+          });
+      }
+    }
+      }
+
+
+
+  }
+
+  Future getPurpose(String purposeMode, int selectedPosition) async {
+    purposeObj = await Navigator.push(
+        context,
+        new MaterialPageRoute(
+          builder: (BuildContext context) =>
+              FullScreenDialogForPurposeSelection(position: selectedPosition),
+          fullscreenDialog: true,
+        )).then<SubLookupForSubPurposeOfLoan>((purposeObjVal) {
+
+      //subPurposeName=purposeObjVal.codeDesc;
+      //subPurposeId = purposeObjVal.code;
+      cusLoanObj.msubpurposeofloandesc = purposeObjVal.codeDesc;
+      cusLoanObj.msubpurposeofloan = int.parse(purposeObjVal.code.trim());
+    });
+    /*  if (purposeMode == "subpurpose") {
+//   if (purposeObj??  purposeObj.codeDesc??  purposeObj.code?? ) {
+      subPurposeName = purposeObj.codeDesc ?? "";
+      subPurposeId = purposeObj.code;
+      // }
+    }*/
+  }
+
+  Future<Null> calculate() async {
+
+   // DateTime formattedLoanDisbDtDate = loanDisbDt!=null?DateTime.parse(loanDisbDt):null;
+    if (cusLoanObj.mprdcd != null &&  cusLoanObj.mloancycle !=null &&
+        cusLoanObj.mfrequency != null && branch > 0){
+      await AppDatabase.get()
+          .selectMaxLoanAmtCanApply(
+          cusLoanObj.mprdcd.trim().toString(),
+          cusLoanObj.mloancycle+1,
+          branch,
+          cusLoanObj.mfrequency)
+          .then((onValue) {
+            if(onValue.isEmpty){
+              canApplyMaxAmount = 0.0;
+
+              canApplyMaxAmount = 0.0;
+
+            }
+
+        for (int secondLoanCycle = 0;
+            secondLoanCycle < onValue.length;
+            secondLoanCycle++) {
+          if (onValue[secondLoanCycle].mruletype == 1) {
+            canApplyMaxAmount = onValue[secondLoanCycle].mmaxamount;
+            canApplyMinAmount = onValue[secondLoanCycle].mminamount;
+          } else if (onValue[secondLoanCycle].mruletype == 2)
+            canApplyMaxInst = onValue[secondLoanCycle].mmaxamount;
+          canApplyMinInst = onValue[secondLoanCycle].mminamount;
+        }
+        setState(() {});
+      });
+    }
+    try {
+      DateTime formattedLoanDisbDtDate = DateTime.parse(loanDisbDt.substring(6) +
+          "-" +
+          loanDisbDt.substring(3, 5) +
+          "-" +
+          loanDisbDt.substring(0, 2));
+      cusLoanObj.mloandisbdt=formattedLoanDisbDtDate;
+
+      DateTime formattedInstStrtDtDate = DateTime.parse(loaninstStrtDt.substring(6) +
+          "-" +
+          loaninstStrtDt.substring(3, 5) +
+          "-" +
+          loaninstStrtDt.substring(0, 2));
+      cusLoanObj.minststrtdt=formattedInstStrtDtDate;
+    } catch (e) {
+      print("date Exception");
+    }
+
+   // cusLoanObj.mloandisbdt=formattedLoanDisbDtDate;;
+    if (cusLoanObj.mprdcd != null &&
+        cusLoanObj.mcurCd != null &&
+        cusLoanObj.mappldloanamt != null &&
+        branch != null &&
+        cusLoanObj.mperiod != null &&
+        cusLoanObj.mloancycle != null) {
+      await AppDatabase.get()
+          .selectSlabIntRate(
+              cusLoanObj.mprdcd.trim().toString(),
+              cusLoanObj.mcurCd.trim().toString(),
+              cusLoanObj.mappldloanamt,
+              branch,
+              cusLoanObj.mperiod,
+              cusLoanObj.mloancycle+1)
+          .then((onValue) {
+        // print("intrate "+ onValue.mintrate.toString());
+        cusLoanObj.mintrate = onValue;
+
+        if (cusLoanObj.mappldloanamt != null &&
+            cusLoanObj.mintrate != null &&
+            cusLoanObj.mperiod != null &&
+            cusLoanObj.mloandisbdt != null &&
+            cusLoanObj.mfrequency != null) {
+          cusLoanObj.minterestamount = (cusLoanObj.mloanamtdisbd) *
+              (cusLoanObj.mintrate) *
+              (cusLoanObj.mperiod / 12.0) /
+              100.0;
+
+          double totalPayingAmount =
+              cusLoanObj.mloanamtdisbd + cusLoanObj.minterestamount;
+          cusLoanObj.minstamt = (totalPayingAmount / cusLoanObj.mperiod).roundToDouble();
+          if(cusLoanObj.mfrequency.trim() == "A"){
+            cusLoanObj.mexpdt=DateTime.now();
+          }else  if (cusLoanObj.mfrequency.trim() == "M") {
+            cusLoanObj.mexpdt = new DateTime(
+                cusLoanObj.minststrtdt.year,
+                cusLoanObj.minststrtdt.month + cusLoanObj.mperiod,
+                cusLoanObj.minststrtdt.day);
+
+          } else if (cusLoanObj.mfrequency.trim() == "B") {
+            if (cusLoanObj.mperiod.isOdd) {
+              cusLoanObj.mexpdt = new DateTime(
+                  cusLoanObj.minststrtdt.year,
+                  cusLoanObj.minststrtdt.month +
+                      ((cusLoanObj.mperiod - 1) / 2).round(),
+                  cusLoanObj.minststrtdt.day + 15);
+
+            } else if (cusLoanObj.mperiod.isEven) {
+              cusLoanObj.mexpdt = new DateTime(
+                  cusLoanObj.minststrtdt.year,
+                  cusLoanObj.minststrtdt.month +
+                      (cusLoanObj.mperiod / 2).round(),
+                  cusLoanObj.minststrtdt.day);
+
+            }
+          }else if (cusLoanObj.mfrequency.trim() == "L") {
+            cusLoanObj.mexpdt = new DateTime(
+                cusLoanObj.minststrtdt.year,
+                cusLoanObj.minststrtdt.month ,
+                cusLoanObj.minststrtdt.day + (cusLoanObj.mperiod * 28));
+
+          }else if (cusLoanObj.mfrequency.trim() == "F") {
+            cusLoanObj.mexpdt = new DateTime(
+                cusLoanObj.minststrtdt.year,
+                cusLoanObj.minststrtdt.month ,
+                cusLoanObj.minststrtdt.day + (cusLoanObj.mperiod * 14));
+
+          }
+          else if (cusLoanObj.mfrequency.trim() == "Q") {
+            cusLoanObj.mexpdt = new DateTime(
+                cusLoanObj.minststrtdt.year,
+                cusLoanObj.minststrtdt.month +(cusLoanObj.mperiod * 3),
+                cusLoanObj.minststrtdt.day );
+          }
+          else if (cusLoanObj.mfrequency.trim() == "W") {
+
+            cusLoanObj.mexpdt = new DateTime(
+                cusLoanObj.minststrtdt.year,
+                cusLoanObj.minststrtdt.month,
+                cusLoanObj.minststrtdt.day + (cusLoanObj.mperiod * 7));
+
+          }
+        }
+
+      });
+    }
+
+
+  }
+
+  Future getCustomerNumber() async {
+    var customerdata;
+    customerdata = await Navigator.push(
+        context,
+        new MaterialPageRoute(
+            builder: (BuildContext context) =>
+                CustomerList(null,"Loan Application")));
+    if (customerdata != null) {
+
+      //canApplyMaxAmount =
+      cusLoanObj.mcustno =
+          customerdata.mcustno != null ? customerdata.mcustno : 0;
+      cusLoanObj.mcusttrefno =
+      customerdata.trefno != null ? customerdata.trefno : 0;
+      cusLoanObj.mcustmrefno =
+      customerdata.mrefno != null ? customerdata.mrefno : 0;
+      cusLoanObj.mcustname = customerdata.mlongname;
+      cusLoanObj.mloancycle = customerdata.mtier != null  ? customerdata.mtier : 0;
+      cusLoanObj.mcustcategory =
+          customerdata.mcustcategory == null ? 0 : customerdata.mcustcategory;
+      loanCycle = customerdata.mtier != null  ? customerdata.mtier : 0;
+      mgrpID = customerdata.mgroupcd != null ? customerdata.mgroupcd : 0;
+      mcenterId = customerdata.mcenterid != null ? customerdata.mcenterid : 0;
+
+      if(mgrpID==cusLoanObj.mcustno||mgrpID==0){
+
+        cusLoanObj.mappliedasind='0';
+
+      }else{
+
+        cusLoanObj.mappliedasind='1';
+
+      }
+
+
+
+
+    if (cusLoanObj.mcustno != null || cusLoanObj.mcustno != 0) {
+      mIsCustomerSelected = "Y";
+    } else {
+      mIsCustomerSelected = "N";
+    }}
+
+
+    print("Applied as indivisdual  ${cusLoanObj.mappliedasind}");
+    setState(() {
+
+    });
+  }
+
+  Future<void> _successfulSubmit() async {
+    return showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: new Icon(
+              Icons.offline_pin,
+              color: Colors.green,
+              size: 60.0,
+            ),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(Translations.of(context).text('loan_created')),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text(Translations.of(context).text('Ok')),
+                onPressed: () {
+                 // CustomerLoanDetailsList.count = 1;
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    new MaterialPageRoute(
+                        builder: (context) =>
+                        // new LoanLimitDetails()), //When Authorized Navigate to the next screen
+                        new CustomerLoanDetailsList("Loan Application",null)),
+                  );
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  proceed() async {
+    bool validate = await validateSubmit();
+
+    if (!validate) {
+      return;
+    }
+    cusLoanObj.mleadstatus = 1;
+    //"New";
+    cusLoanObj.mrefno = cusLoanObj.mrefno != null ? cusLoanObj.mrefno : 0;
+    if (cusLoanObj.mcreatedby == null ||
+        cusLoanObj.mcreatedby == '' ||
+        cusLoanObj.mcreatedby == 'null') {
+      cusLoanObj.mcreatedby = username;
+    }
+
+    cusLoanObj.mrouteto = '';
+    cusLoanObj.mroutefrom = '';
+    cusLoanObj.mlastupdateby = username;
+    if (cusLoanObj.mcreateddt == null) {
+      cusLoanObj.mcreatedby = username;
+      cusLoanObj.mcreateddt = DateTime.now();
+    }
+
+    cusLoanObj.mlastupdatedt = DateTime.now();
+    cusLoanObj.mgeolocation = geoLocation;
+    cusLoanObj.mgeologd = geoLongitude;
+    cusLoanObj.mgeolatd = geoLatitude;
+
+    await AppDatabase.get()
+        .updateCustomerLoanDetailsMaster(cusLoanObj)
+        .then((val) {
+
+    });
+    _successfulSubmit();
+  }
+
+  Future<void> _showAlertForFPSMismatch() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title:
+          Text("Finger Print not Matched!! Do you still want to continue?"),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('$error'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              child: Text(Translations.of(context).text('Yes')),
+              onPressed: () {
+            //    saveData();
+
+
+              },
+            ),
+
+            FlatButton(
+              child: Text(Translations.of(context).text('Cancel')),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showAlert(arg, error) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("$arg"+Translations.of(context).text('error')),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('$error'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              child: Text(Translations.of(context).text('Ok')),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> validateSubmit() async {
+    String error = "";
+
+    if (cusLoanObj.mcusttrefno == null ||
+        cusLoanObj.mcusttrefno == "" ||
+        cusLoanObj.mcustname == null ||
+        cusLoanObj.mcustname == "" ||
+        cusLoanObj.mcustname == "null") {
+      _showAlert(
+          Translations.of(context).text("Customer Tablet Ref Number And Name"),
+          Translations.of(context).text("It is Mandatory"));
+      // _tabController.animateTo(0);
+
+      return false;
+    }
+    if (cusLoanObj.mprdname == "" || cusLoanObj.mprdname == null) {
+      _showAlert("Product Name", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+ /*   if (cusLoanObj.mpurposeofloandesc == "" ||
+        cusLoanObj.mpurposeofloandesc == null) {
+      _showAlert("Purpose Of Loan", "It is Mandatory");
+      _tabController.animateTo(0);
+      return false;
+    }*/
+    if (cusLoanObj.msubpurposeofloan == "" ||
+        cusLoanObj.msubpurposeofloan == null) {
+      _showAlert(Translations.of(context).text('sub_purpose_of_loan'), Translations.of(context).text('It_Is_Mandatory'));
+      //_tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mintrate == "" || cusLoanObj.mintrate == null) {
+      _showAlert("R.O.I", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mfrequency == "" || cusLoanObj.mfrequency == null) {
+      _showAlert("Repayment Frequency Of Loan", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mexpdt == "" || cusLoanObj.mexpdt == null) {
+      _showAlert("End Date", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.minterestamount == "" ||
+        cusLoanObj.minterestamount == null) {
+      _showAlert("Interest Amount", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.minstamt == "" || cusLoanObj.minstamt == null) {
+      _showAlert("Installment Amount", "It is Mandatory");
+      //_tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mapprvdloanamt == "" || cusLoanObj.mapprvdloanamt == null) {
+      _showAlert("Approved Amount", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mloanamtdisbd == "" || cusLoanObj.mloanamtdisbd == null) {
+      _showAlert("Disbursment Amount", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mrepaymentmode == "" ||
+        cusLoanObj.mrepaymentmode == null ||
+        cusLoanObj.mrepaymentmode == 0) {
+      _showAlert("Mode Of Collection", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mmodeofdisb == "" ||
+        cusLoanObj.mmodeofdisb == null ||
+        cusLoanObj.mrepaymentmode == 0) {
+      _showAlert("Mode Of Disbursment", "It is Mandatory");
+      // _tabController.animateTo(0);
+      return false;
+    }
+
+    if (cusLoanObj.mapprvdloanamt > canApplyMaxAmount ||
+        cusLoanObj.mappldloanamt > canApplyMaxAmount) {
+      _showAlert("Applied Amount", "Please enter correct Amount");
+      // _tabController.animateTo(0);
+      return false;
+    }
+
+    if (cusLoanObj.mperiod > canApplyMaxInst) {
+      _showAlert("Period cannot be more than max apply period",
+          "Please entercorrect period");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mperiod < canApplyMinInst) {
+      _showAlert("Applied Installment", "Please apply correct installment");
+      // _tabController.animateTo(0);
+      return false;
+    }
+    if (cusLoanObj.mapprvdloanamt < canApplyMinAmount) {
+      _showAlert("Applied Amount", "Please enter correct Amount");
+      // _tabController.animateTo(0);
+      return false;
+    }
+
+    GroupFoundationBean GrpObj =
+        await AppDatabase.get().getGroupFromGrpId(mgrpID);
+
+    if (GrpObj.mgroupprdcode != null &&
+        GrpObj.mgroupprdcode.trim() != "" &&
+        GrpObj.mgroupprdcode.trim() != "null" &&
+        isMemeberOfGroupForLoan == true) {
+      if (cusLoanObj.mprdcd != GrpObj.mgroupprdcode) {
+        _showAlert("Product group mismatch ",
+            "Can Only apply for ${GrpObj.mgroupprdcode}");
+        // _tabController.animateTo(0);
+        return false;
+      }
+
+
+
+      await AppDatabase.get()
+          .selectMaxLoanAmtCanApply(cusLoanObj.mprdcd.trim().toString(),
+              cusLoanObj.mloancycle + 1, branch, cusLoanObj.mfrequency)
+          .then((onValue) {
+        for (int secondLoanCycle = 0;
+            secondLoanCycle < onValue.length;
+            secondLoanCycle++) {
+          if (onValue[secondLoanCycle].mruletype == 1) {
+            canApplyMaxAmount = onValue[secondLoanCycle].mmaxamount;
+            canApplyMinAmount = onValue[secondLoanCycle].mminamount;
+          } else if (onValue[secondLoanCycle].mruletype == 2)
+            canApplyMaxInst = onValue[secondLoanCycle].mmaxamount;
+          canApplyMinInst = onValue[secondLoanCycle].mminamount;
+        }
+        setState(() {});
+      });
+    }
+
+
+
+    if(prefs.getString(TablesColumnFile.misIndividual)=="N"){
+      return true;
+    }
+
+
+
+    CenterDetailsBean centerObj =
+    await AppDatabase.get().getCenterFromCenterId(mcenterId);
+    if (centerObj != null &&
+        centerObj.mmeetingfreq != null &&
+        centerObj.mmeetingfreq.trim() != "") {
+      List<String> frequencies = new List<String>();
+      bool matched = false;
+
+      if (centerObj.mmeetingfreq.trim() == "W") {
+        frequencies = Constant.INSTFREQ_W.split("-");
+
+        for (String freq in frequencies) {
+          if (freq.trim() == cusLoanObj.mfrequency.trim()) {
+            matched = true;
+            break;
+          }
+        }
+      } else if (centerObj.mmeetingfreq.trim() == "F") {
+        frequencies = Constant.INSTFREQ_F.split("-");
+
+        for (String freq in frequencies) {
+          if (freq.trim() == cusLoanObj.mfrequency.trim()) {
+            matched = true;
+            break;
+          }
+        }
+      } else if (centerObj.mmeetingfreq.trim() == "M") {
+        frequencies = Constant.INSTFREQ_M.split("-");
+
+        for (String freq in frequencies) {
+          if (freq.trim() == cusLoanObj.mfrequency.trim()) {
+            matched = true;
+            break;
+          }
+        }
+      } else {
+        frequencies = Constant.INSTFREQ_B.split("-");
+
+        for (String freq in frequencies) {
+          if (freq.trim() == cusLoanObj.mfrequency.trim()) {
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if(matched==false){
+        _showAlert("Center Meeting Frequency ", "Center meeting frequency do not match with product frequency");
+        return false;
+      }
+
+    }
+    return true;
+  }
+  void showMessage(String message, [MaterialColor color = Colors.grey]) {
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+        backgroundColor: color != null ? color : null,
+        content: new Text(message)));
+  }
+}

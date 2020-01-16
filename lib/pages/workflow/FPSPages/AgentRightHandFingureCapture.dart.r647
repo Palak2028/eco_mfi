@@ -1,0 +1,738 @@
+import 'package:eco_mfi/db/TablesColumnFile.dart';
+import 'package:eco_mfi/pages/workflow/customerFormation/CustomerFormationMasterTabs.dart';
+import 'package:flutter/material.dart';
+import 'package:eco_mfi/Utilities/app_constant.dart';
+import 'package:eco_mfi/Utilities/globals.dart' as globals;
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toast/toast.dart';
+
+class AgentRightHandFingureCapture extends StatefulWidget {
+  @override
+  _AgentRightHandFingureCapture createState() => _AgentRightHandFingureCapture();
+}
+
+class _AgentRightHandFingureCapture extends State<AgentRightHandFingureCapture> {
+  static int counterRightHandFinger = 0;
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return new WillPopScope(
+      onWillPop: () {
+        counterRightHandFinger = 0;
+        Navigator.pop(context);
+      },
+      child: Center(
+        child: Container(
+            padding:
+            EdgeInsets.only(left: 10.0, top: 20.0, right: 10.0, bottom: 10.0),
+            alignment: Alignment.center,
+            // color: Colors.white70,
+            decoration: new BoxDecoration(
+              image: new DecorationImage(
+                image: new AssetImage("assets/background_finger_capture.png"),
+                fit: BoxFit.fill,
+                ),
+              ),
+
+//        width: 200.0,
+//        height: 100.0,
+//      margin: EdgeInsets.only(left: 35.0,top:50.0),
+            child: Column(
+              children: <Widget>[
+                new Flexible(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          Constant.label_biometric_scan,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 20.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                    ],
+                    ),
+                  flex: 1,
+                  ),
+                Expanded(
+                  child: Text(
+                    Constant.label_please_select_rt_hand_fngr,
+                    textAlign: TextAlign.left,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                        decoration: TextDecoration.none,
+                        fontSize: 18.0,
+                        fontFamily: 'Raleway',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black38
+                        //          fontStyle: FontStyle.italic
+                        ),
+                    ),
+                  ),
+                new Flexible(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                        child: RightHandThumb(),
+                        ),
+                      Expanded(
+                        child: RightHandIndexFinger(),
+                        ),
+                      Expanded(
+                        child: RightHandMiddleFinger(),
+                        ),
+                    ],
+                    ),
+                  flex: 3,
+                  ),
+                new Flexible(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          Constant.label_thumb_finger,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 18.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black38
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          Constant.label_index_finger,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 18.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black38
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          Constant.label_middle_finger,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 18.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black38
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                    ],
+                    ),
+                  flex: 3,
+                  ),
+                new Flexible(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                        child: RightHandRingFinger(),
+                        ),
+                      Expanded(
+                        child: RightHandPinkyFinger(),
+                        ),
+                      /* Expanded(
+                        child: RightHandThumb(),
+                      ),*/
+                    ],
+                    ),
+                  flex: 3,
+                  ),
+                new Flexible(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          Constant.label_ring_finger,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 18.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black38
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          Constant.label_pinky_finger,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 18.0,
+                              fontFamily: 'Raleway',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black38
+                              //          fontStyle: FontStyle.italic
+                              ),
+                          ),
+                        ),
+                    ],
+                    ),
+                  flex: 3,
+                  ),
+              ],
+              )),
+        ),
+    );
+  }
+}
+
+
+//  class for right hand thumb
+class RightHandThumb extends StatefulWidget {
+  @override
+  _RightHandThumb createState() => new _RightHandThumb();
+}
+
+class _RightHandThumb extends State<RightHandThumb> {
+  String _myImage = 'assets/fpsImages/rt_hand_thumb.png';
+  static const platform = const MethodChannel('com.infrasofttech.eco_mfi');
+  SharedPreferences prefs;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if(CustomerFormationMasterTabsState
+        .custListBean.imageMaster[18].imgSubType !=
+        null &&
+        CustomerFormationMasterTabsState
+            .custListBean.imageMaster[18].imgSubType !=
+            ""){
+      _myImage =
+      'assets/fpsImages/rt_hand_thumb_selected.png';
+      _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+    }else{
+      _myImage == 'assets/fpsImages/rt_hand_thumb.png';
+    }
+  }
+
+
+  void _onClicked() {
+
+    print(
+        "rhcv" + _AgentRightHandFingureCapture.counterRightHandFinger.toString());
+    if (_AgentRightHandFingureCapture.counterRightHandFinger < 3) {
+      _callChannelRHThumb("RhThumb");
+    } else {
+      Toast.show("you have already captured 3 fingers", context);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var assetImage = new AssetImage(_myImage);
+    var image = new Image(
+      image: assetImage,
+      fit: BoxFit.fitHeight,
+    );
+    return new Container(
+      child: new FlatButton(
+        onPressed: _onClicked,
+        child: image,
+      ),
+    );
+  }
+  _callChannelRHThumb(String fingerType) async {
+    prefs = await SharedPreferences.getInstance();
+    String bluetootthAdd = prefs.getString(TablesColumnFile.bluetoothAddress);
+    try {
+      final String result = await platform.invokeMethod("callingForFPS", {
+        "callValue": 0,
+        "BluetoothADD": bluetootthAdd,
+        "TYPEofFINGER": fingerType
+      });
+      String geTest = '$result';
+      print("rightthumbvalue!! : " +geTest);
+      if (geTest != null  && geTest != 'null') {
+        setState(() {
+
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[18]
+              .imgSubType = fingerType;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[18]
+              .imgString = geTest;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[18]
+              .imgType = "FingerPrint";
+
+          _myImage =
+          'assets/fpsImages/rt_hand_thumb_selected.png';
+          _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+          //Navigator.pop(context,fingerType+"#"+geTest );
+        });
+      }else{
+        _myImage =
+        'assets/fpsImages/rt_hand_thumb.png';
+      }
+
+      print("FLutter : " + geTest.toString());
+    } on PlatformException catch (e) {
+      print("FLutter : " + e.message.toString());
+    }
+  }
+}
+
+// class for Index finger
+class RightHandIndexFinger extends StatefulWidget {
+  @override
+  _RightHandIndexFinger createState() => new _RightHandIndexFinger();
+}
+
+class _RightHandIndexFinger extends State<RightHandIndexFinger> {
+  String _myImage = 'assets/fpsImages/rt_hand_index.png';
+  static const platform = const MethodChannel('com.infrasofttech.eco_mfi');
+  SharedPreferences prefs;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    if(CustomerFormationMasterTabsState
+        .custListBean.imageMaster[19].imgSubType !=
+        null &&
+        CustomerFormationMasterTabsState
+            .custListBean.imageMaster[19].imgSubType !=
+            ""){
+      _myImage =
+      'assets/fpsImages/rt_hand_index_selected.png';
+      _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+    }else{
+      _myImage == 'assets/fpsImages/rt_hand_index.png';
+    }
+  }
+
+
+  void _onClicked() {
+
+    print(
+        "rhcv" + _AgentRightHandFingureCapture.counterRightHandFinger.toString());
+    if (_AgentRightHandFingureCapture.counterRightHandFinger < 6) {
+      _callChannelRHIndexFinger("RhIndexFinger");
+    } else {
+      Toast.show("you have already captured 3 fingers", context);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var assetImage = new AssetImage(_myImage);
+    var image = new Image(
+      image: assetImage,
+      fit: BoxFit.fitHeight,
+    );
+    return new Container(
+      child: new FlatButton(
+        onPressed: _onClicked,
+        child: image,
+      ),
+    );
+  }
+  _callChannelRHIndexFinger(String fingerType) async {
+    prefs = await SharedPreferences.getInstance();
+    String bluetootthAdd = prefs.getString(TablesColumnFile.bluetoothAddress);
+    try {
+      final String result = await platform.invokeMethod("callingForFPS", {
+        "callValue": 0,
+        "BluetoothADD": bluetootthAdd,
+        "TYPEofFINGER": fingerType
+      });
+      String geTest = '$result';
+      print("rightindexvalue!! : " +geTest);
+      if (geTest != null  && geTest != 'null') {
+        setState(() {
+
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[19]
+              .imgSubType = fingerType;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[19]
+              .imgString = geTest;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[19]
+              .imgType = "FingerPrint";
+
+
+          _myImage =
+          'assets/fpsImages/rt_hand_index_selected.png';
+          _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+          //Navigator.pop(context,fingerType+"#"+geTest );
+        });
+      }else{
+        _myImage =
+        'assets/fpsImages/rt_hand_index.png';
+      }
+
+      print("FLutter : " + geTest.toString());
+    } on PlatformException catch (e) {
+      print("FLutter : " + e.message.toString());
+    }
+  }
+}
+
+// class for middle finger
+class RightHandMiddleFinger extends StatefulWidget {
+  @override
+  _RightHandMiddleFinger createState() => new _RightHandMiddleFinger();
+}
+
+class _RightHandMiddleFinger extends State<RightHandMiddleFinger> {
+  String _myImage = 'assets/fpsImages/rt_hand_middle.png';
+  static const platform = const MethodChannel('com.infrasofttech.eco_mfi');
+  SharedPreferences prefs;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if(CustomerFormationMasterTabsState
+        .custListBean.imageMaster[20].imgSubType !=
+        null &&
+        CustomerFormationMasterTabsState
+            .custListBean.imageMaster[20].imgSubType !=
+            ""){
+      _myImage =
+      'assets/fpsImages/rt_hand_middle_selected.png';
+      _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+    }else{
+      _myImage == 'assets/fpsImages/rt_hand_middle.png';
+    }
+  }
+
+
+  void _onClicked() {
+
+    print(
+        "rhcv" + _AgentRightHandFingureCapture.counterRightHandFinger.toString());
+    if (_AgentRightHandFingureCapture.counterRightHandFinger < 3) {
+      _callChannelRHMiddleFinger("RhMiddleFinger");
+    } else {
+      Toast.show("you have already captured 3 fingers", context);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var assetImage = new AssetImage(_myImage);
+    var image = new Image(
+      image: assetImage,
+      fit: BoxFit.fitHeight,
+    );
+    return new Container(
+      child: new FlatButton(
+        onPressed: _onClicked,
+        child: image,
+      ),
+    );
+  }
+  _callChannelRHMiddleFinger(String fingerType) async {
+    prefs = await SharedPreferences.getInstance();
+    String bluetootthAdd = prefs.getString(TablesColumnFile.bluetoothAddress);
+    try {
+      final String result = await platform.invokeMethod("callingForFPS", {
+        "callValue": 0,
+        "BluetoothADD": bluetootthAdd,
+        "TYPEofFINGER": fingerType
+      });
+      String geTest = '$result';
+      print("rihgtmdiddlevalue!! : " +geTest);
+      if (geTest != null  && geTest != 'null') {
+        setState(() {
+
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[20]
+              .imgSubType = fingerType;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[20]
+              .imgString = geTest;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[20]
+              .imgType = "FingerPrint";
+
+
+          _myImage =
+          'assets/fpsImages/rt_hand_middle_selected.png';
+          _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+         // Navigator.pop(context,fingerType+"#"+geTest );
+        });
+      }else{
+        _myImage =
+        'assets/fpsImages/rt_hand_middle.png';
+      }
+
+      print("FLutter : " + geTest.toString());
+    } on PlatformException catch (e) {
+      print("FLutter : " + e.message.toString());
+    }
+  }
+}
+
+// class for Ring finger
+class RightHandRingFinger extends StatefulWidget {
+  @override
+  _RightHandRingFinger createState() => new _RightHandRingFinger();
+}
+
+class _RightHandRingFinger extends State<RightHandRingFinger> {
+  String _myImage = 'assets/fpsImages/rt_hand_ring.png';
+  static const platform = const MethodChannel('com.infrasofttech.eco_mfi');
+  SharedPreferences prefs;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    if(CustomerFormationMasterTabsState
+        .custListBean.imageMaster[21].imgSubType !=
+        null &&
+        CustomerFormationMasterTabsState
+            .custListBean.imageMaster[21].imgSubType !=
+            ""){
+      _myImage =
+      'assets/fpsImages/rt_hand_ring_selected.png';
+      _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+    }else{
+      _myImage == 'assets/fpsImages/rt_hand_ring.png';
+    }
+  }
+
+
+  void _onClicked() {
+
+    print(
+        "rhcv" + _AgentRightHandFingureCapture.counterRightHandFinger.toString());
+    if (_AgentRightHandFingureCapture.counterRightHandFinger < 3) {
+      _callChannelRHRingFinger("RhRingFinger");
+    } else {
+      Toast.show("you have already captured 3 fingers", context);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var assetImage = new AssetImage(_myImage);
+    var image = new Image(
+      image: assetImage,
+      fit: BoxFit.fitHeight,
+    );
+    return new Container(
+      child: new FlatButton(
+        onPressed: _onClicked,
+        child: image,
+      ),
+    );
+  }
+  _callChannelRHRingFinger(String fingerType) async {
+    prefs = await SharedPreferences.getInstance();
+    String bluetootthAdd = prefs.getString(TablesColumnFile.bluetoothAddress);
+    try {
+      final String result = await platform.invokeMethod("callingForFPS", {
+        "callValue": 0,
+        "BluetoothADD": bluetootthAdd,
+        "TYPEofFINGER": fingerType
+      });
+      String geTest = '$result';
+      print("rightringvalue!! : " +geTest);
+      if (geTest != null  && geTest != 'null') {
+        setState(() {
+
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[21]
+              .imgSubType = fingerType;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[21]
+              .imgString = geTest;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[21]
+              .imgType = "FingerPrint";
+
+          _myImage =
+          'assets/fpsImages/rt_hand_ring_selected.png';
+          _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+
+
+         // Navigator.pop(context,fingerType+"#"+geTest );
+        });
+      }else{
+        _myImage =
+        'assets/fpsImages/rt_hand_ring.png';
+      }
+
+      print("FLutter : " + geTest.toString());
+    } on PlatformException catch (e) {
+      print("FLutter : " + e.message.toString());
+    }
+  }
+}
+
+// class for pinky finger
+class RightHandPinkyFinger extends StatefulWidget {
+  @override
+  _RightHandPinkyFinger createState() => new _RightHandPinkyFinger();
+}
+
+class _RightHandPinkyFinger extends State<RightHandPinkyFinger> {
+  String _myImage = 'assets/fpsImages/rt_hand_pinky.png';
+  static const platform = const MethodChannel('com.infrasofttech.eco_mfi');
+  SharedPreferences prefs;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    if(CustomerFormationMasterTabsState
+        .custListBean.imageMaster[22].imgSubType !=
+        null &&
+        CustomerFormationMasterTabsState
+            .custListBean.imageMaster[22].imgSubType !=
+            ""){
+      _myImage =
+      'assets/fpsImages/rt_hand_pinky_selected.png';
+      _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+    }else{
+      _myImage == 'assets/fpsImages/rt_hand_pinky.png';
+    }
+  }
+
+
+  void _onClicked() {
+
+    print(
+        "rhcv" + _AgentRightHandFingureCapture.counterRightHandFinger.toString());
+    if (_AgentRightHandFingureCapture.counterRightHandFinger < 3) {
+      _callChannelRHPinkyFinger("RhPinkyFinger");
+    } else {
+      Toast.show("you have already captured 3 fingers", context);
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var assetImage = new AssetImage(_myImage);
+    var image = new Image(
+      image: assetImage,
+      fit: BoxFit.fitHeight,
+    );
+    return new Container(
+      child: new FlatButton(
+        onPressed: _onClicked,
+        child: image,
+      ),
+    );
+  }
+  _callChannelRHPinkyFinger(String fingerType) async {
+    prefs = await SharedPreferences.getInstance();
+    String bluetootthAdd = prefs.getString(TablesColumnFile.bluetoothAddress);
+    try {
+      final String result = await platform.invokeMethod("callingForFPS", {
+        "callValue": 0,
+        "BluetoothADD": bluetootthAdd,
+        "TYPEofFINGER": fingerType
+      });
+      String geTest = '$result';
+      print("righttpinkyvalue!! : " +geTest);
+      if (geTest != null  && geTest != 'null') {
+        setState(() {
+
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[22]
+              .imgSubType = fingerType;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[22]
+              .imgString = geTest;
+          CustomerFormationMasterTabsState
+              .custListBean
+              .imageMaster[22]
+              .imgType = "FingerPrint";
+
+          _myImage =
+          'assets/fpsImages/rt_hand_pinky_selected.png';
+          _AgentRightHandFingureCapture.counterRightHandFinger++;
+
+
+         // Navigator.pop(context,fingerType+"#"+geTest );
+        });
+      }else{
+        _myImage =
+        'assets/fpsImages/rt_hand_pinky.png';
+      }
+
+      print("FLutter : " + geTest.toString());
+    } on PlatformException catch (e) {
+      print("FLutter : " + e.message.toString());
+    }
+  }
+}

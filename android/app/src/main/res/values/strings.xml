@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="actDiscovery_msg_starting_device">Scanning for Bluetooth Device Please wait&#8230;</string>
+    <string name="dialog_title_sys_err">System Error</string>
+    <string name="actDiscovery_msg_start_bluetooth_fail">Bluetooth device start fail</string>
+    <string name="btn_ok">OK</string>
+
+</resources>
